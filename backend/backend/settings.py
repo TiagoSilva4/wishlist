@@ -14,7 +14,7 @@ SECRET_KEY = "dummy-secret-key"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "backend"]
+ALLOWED_HOSTS = ["localhost", "backend", "127.0.0.1"]
 
 
 # Application definition
@@ -33,14 +33,16 @@ INSTALLED_APPS = [
     "allauth.mfa",
     "allauth.headless",
     "allauth.usersessions",
+    "rest_framework",
+    "corsheaders",
     "drf_spectacular",
-    "backend.drf_demo",
-    "backend.ninja_demo",
+    "backend",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -128,6 +130,7 @@ EMAIL_PORT = 1025
 AUTHENTICATION_BACKENDS = ("allauth.account.auth_backends.AuthenticationBackend",)
 
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = False
 ACCOUNT_LOGIN_BY_CODE_ENABLED = True
@@ -160,3 +163,5 @@ try:
     from .local_settings import *  # noqa
 except ImportError:
     pass
+
+CORS_ALLOW_ALL_ORIGINS = True
