@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
+
 import { AuthChangeRedirector, AnonymousRoute, AuthenticatedRoute } from './auth'
 import {
   createBrowserRouter,
   RouterProvider
 } from 'react-router-dom'
 import Calculator from './Calculator'
+import HomePage from './HomePage'
 import Login from './account/Login'
 import RequestLoginCode from './account/RequestLoginCode'
 import ConfirmLoginCode from './account/ConfirmLoginCode'
@@ -51,7 +53,7 @@ function createRouter (config) {
       children: [
         {
           path: '/',
-          element: <Home />
+          element: <HomePage />
         },
         {
           path: '/calculator',
