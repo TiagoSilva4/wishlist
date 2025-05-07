@@ -6,16 +6,6 @@ import { wishlistService } from "../services/wishlistService";
 // Add API base URL constant
 const API_BASE_URL = "http://localhost:8000/api";
 
-// Define the preset category options - same as in other components
-const categoryOptions = [
-  { value: 'wedding', label: 'Wedding' },
-  { value: 'anniversary', label: 'Anniversary' },
-  { value: 'birthday', label: 'Birthday' },
-  { value: 'graduation', label: 'Graduation' },
-  { value: 'christmas', label: 'Christmas' },
-  { value: 'other', label: 'Other' }
-];
-
 const WishlistDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -87,10 +77,19 @@ const WishlistDetail = () => {
         // Use different API methods based on the URL
         if (isSharedWishlistUrl) {
           // For shared wishlists, use the dedicated endpoint that doesn't require auth
+          console.log(`Fetching shared wishlist with slug: ${slug}`);
           data = await wishlistService.getSharedWishlist(slug);
           setIsSharedView(true); // Set shared view state
+          
+          // Log for debugging
+          if (data && data.items) {
+            console.log(`Successfully loaded shared wishlist with ${data.items.length} items`);
+          } else {
+            console.warn('Loaded shared wishlist but items array is missing or empty:', data);
+          }
         } else {
           // For regular wishlist views, use the authenticated endpoint
+          console.log(`Fetching regular wishlist with slug: ${slug}`);
           data = await wishlistService.getWishlist(slug);
           setIsSharedView(false); // Not a shared view
         }
@@ -123,9 +122,11 @@ const WishlistDetail = () => {
     // Listen for wishlist update events
     const handleWishlistUpdated = (event) => {
       const detail = event.detail || {};
+      console.log('WishlistDetail - received wishlist:updated event', detail);
       
       // Only refresh if this is the wishlist being updated
       if (detail.wishlistSlug === slug) {
+        console.log(`This wishlist (${slug}) was updated, refreshing details`);
         fetchWishlist();
       }
     };
@@ -224,15 +225,18 @@ const WishlistDetail = () => {
       if (typeof itemData.priority === "string") {
         itemData.priority = parseInt(itemData.priority, 10) || 2;
       }
+      
       console.log(`${editingItemId ? "Updating" : "Adding"} item with data:`, itemData);
       
       if (editingItemId) {
         // Update existing item
+        console.log(`Updating item with ID: ${editingItemId}`);
         
         // Make sure to include the wishlist ID when updating
         itemData.wishlist = wishlist.id;
         
         response = await wishlistService.updateItem(editingItemId, itemData);
+        console.log("Update response:", response);
         
         // Update the item in the list
         const updatedItems = wishlist.items.map(item => 
@@ -248,9 +252,11 @@ const WishlistDetail = () => {
       } else {
         // Add wishlist ID for new items
         itemData.wishlist = wishlist.id;
+        console.log(`Adding new item to wishlist ID: ${wishlist.id}`);
         
         // Create new item
         response = await wishlistService.createItem(itemData);
+        console.log("Create response:", response);
       
         // Update wishlist with new item
         setWishlist({
@@ -284,7 +290,9 @@ const WishlistDetail = () => {
   const handleDeleteWishlist = async () => {
     try {
       setDeleteInProgress(true);
+      console.log("Deleting wishlist with slug:", slug);
       const result = await wishlistService.deleteWishlist(slug);
+      console.log("Delete result:", result);
       
       // Dispatch a custom event to notify other components that wishlists have changed
       // Include a timestamp to ensure it's treated as a new event
@@ -315,6 +323,7 @@ const WishlistDetail = () => {
     
     try {
       setItemDeleteInProgress(true);
+      console.log("Deleting item with ID:", itemToDelete.id);
       
       await wishlistService.deleteItem(itemToDelete.id);
       
@@ -344,6 +353,16 @@ const WishlistDetail = () => {
     setItemToDelete(item);
     setShowItemDeleteModal(true);
   };
+
+  // For debugging only
+  console.log('Debug - Auth status:', { 
+    isAuthenticated: isAuthenticated,
+    userExists: !!currentUser, 
+    wishlistUserExists: !!wishlist?.user, 
+    userId: currentUser?.id, 
+    wishlistUserId: wishlist?.user?.id,
+    isOwner: isOwner
+  });
   
   // Function to extract details from URL and fill form fields without saving
   const extractUrlDetails = async () => {
@@ -358,6 +377,7 @@ const WishlistDetail = () => {
       
       // Use the wishlistService method to extract details
       const extractedData = await wishlistService.extractItemDetails(newItem.url);
+      console.log("Extracted details:", extractedData);
       
       // Check if extraction was successful or if we got fallback data
       if (extractedData.name === 'Unknown Product') {
@@ -458,6 +478,8 @@ const WishlistDetail = () => {
       // Show a success message
       setSuccessMessage("Details extracted! Review and save when ready.");
       setTimeout(() => setSuccessMessage(null), 5000);
+      
+      console.log("Item details extracted successfully:", extractedData);
     } catch (err) {
       console.error("Error extracting from URL:", err);
       // Use a simple, user-friendly error message regardless of the actual error
@@ -466,6 +488,71 @@ const WishlistDetail = () => {
       setIsExtracting(false);
     }
   };
+  
+  // Add a debug function to test shared wishlist access
+  const runDebugTest = async () => {
+    if (!slug) return;
+    
+    try {
+      console.log('Running debug test for shared wishlist access...');
+      const debugResult = await wishlistService.debugSharedWishlist(slug);
+      console.log('Debug test result:', debugResult);
+      
+      // Display the debug result as an alert for now
+      if (debugResult.error) {
+        alert(`Debug Error: ${debugResult.error}`);
+      } else {
+        const formattedResult = `
+Auth: ${debugResult.auth_status.authenticated ? debugResult.auth_status.user : 'Not authenticated'}
+Wishlist: ${debugResult.wishlist.title} (${debugResult.wishlist.privacy})
+Items: ${debugResult.wishlist.item_count}
+First few items: ${debugResult.items.slice(0, 3).map(i => i.name).join(', ')}
+        `;
+        alert(`Debug Success:\n${formattedResult}`);
+      }
+    } catch (err) {
+      console.error('Error running debug test:', err);
+      alert(`Debug function error: ${err.message}`);
+    }
+  };
+  
+  // Add a hidden debug trigger - press 'd' three times quickly to run debug
+  const [debugKeyCount, setDebugKeyCount] = useState(0);
+  const debugKeyTimer = useRef(null);
+  
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.key === 'd' || e.key === 'D') {
+        setDebugKeyCount(prev => prev + 1);
+        
+        // Reset after a timeout
+        if (debugKeyTimer.current) {
+          clearTimeout(debugKeyTimer.current);
+        }
+        
+        debugKeyTimer.current = setTimeout(() => {
+          setDebugKeyCount(0);
+        }, 1000);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyPress);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+      if (debugKeyTimer.current) {
+        clearTimeout(debugKeyTimer.current);
+      }
+    };
+  }, []);
+  
+  // Trigger debug function when key count reaches 3
+  useEffect(() => {
+    if (debugKeyCount >= 3) {
+      runDebugTest();
+      setDebugKeyCount(0);
+    }
+  }, [debugKeyCount]);
 
   // Render the component
   if (loading) return (
@@ -1033,29 +1120,7 @@ const WishlistDetail = () => {
                     <path fillRule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
                   </svg>
                   <span style={{ fontWeight: "500" }}>Category:</span>
-                  <span>
-                    {(() => {
-                      // Handle different category data formats
-                      if (typeof wishlist.category === 'object' && wishlist.category.name) {
-                        // Full category object with name
-                        const foundCategory = categoryOptions.find(opt => opt.value === wishlist.category.name);
-                        return foundCategory ? foundCategory.label : wishlist.category.name;
-                      } else if (typeof wishlist.category === 'number') {
-                        // Category is just an ID number
-                        if (wishlist.category >= 1 && wishlist.category <= categoryOptions.length) {
-                          return categoryOptions[wishlist.category - 1].label;
-                        } else {
-                          return `Category ${wishlist.category}`;
-                        }
-                      } else if (typeof wishlist.category === 'string') {
-                        // Category is a string value (slug/name)
-                        const foundCategory = categoryOptions.find(opt => opt.value === wishlist.category);
-                        return foundCategory ? foundCategory.label : wishlist.category;
-                      } else {
-                        return 'Unknown Category';
-                      }
-                    })()}
-                  </span>
+                  <span>{wishlist.category.name}</span>
                 </div>
               )}
               
@@ -1351,7 +1416,7 @@ const WishlistDetail = () => {
                       )}
                     </button>
                   </div>
-                </div>
+                  
               )}
               
               <form onSubmit={handleAddItem}>

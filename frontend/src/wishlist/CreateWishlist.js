@@ -14,10 +14,20 @@ const CreateWishlist = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  
+  // Define the preset category options - same as in Categories.js
+  const categoryOptions = [
+    { value: 'wedding', label: 'Wedding' },
+    { value: 'anniversary', label: 'Anniversary' },
+    { value: 'birthday', label: 'Birthday' },
+    { value: 'graduation', label: 'Graduation' },
+    { value: 'christmas', label: 'Christmas' },
+    { value: 'other', label: 'Other' }
+  ];
 
   useEffect(() => {
     // Set document title
-    document.title = "Create Wishlist | WishList";
+    document.title = "Create Wishlist | WishList App";
     
     // Fetch categories
     const fetchCategories = async () => {
@@ -54,6 +64,12 @@ const CreateWishlist = () => {
       // Convert empty occasion_date to null
       if (submissionData.occasion_date === "") {
         submissionData.occasion_date = null;
+      }
+      
+      // Handle category directly by name
+      if (submissionData.category_id) {
+        submissionData.category_name = submissionData.category_id;
+        submissionData.category_id = null; // Clear the ID since we're using name
       }
       
       // Send data to API
@@ -255,7 +271,7 @@ const CreateWishlist = () => {
               color: "#1e293b",
               fontSize: "0.9375rem"
             }}>
-              Category
+              Category <span style={{ color: "#64748b", fontWeight: "normal", fontSize: "0.875rem" }}>(Optional)</span>
             </label>
             <select
               name="category_id"
@@ -274,7 +290,8 @@ const CreateWishlist = () => {
                 backgroundRepeat: "no-repeat",
                 backgroundSize: "1.25rem",
                 transition: "all 0.2s",
-                outline: "none"
+                outline: "none",
+                color: "#1e293b"
               }}
               onFocus={(e) => {
                 e.target.style.borderColor = "#a5b4fc";
@@ -285,9 +302,12 @@ const CreateWishlist = () => {
                 e.target.style.boxShadow = "none";
               }}
             >
-              <option value="">No Category</option>
-              {categories.map(category => (
-                <option key={category.id} value={category.id}>{category.name}</option>
+              <option value="">Select a category</option>
+              {/* Display the predefined categories */}
+              {categoryOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
               ))}
             </select>
             <p style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "0.5rem" }}>

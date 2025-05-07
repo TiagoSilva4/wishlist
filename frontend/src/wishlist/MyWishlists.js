@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
 import apiService from "../services/api";
 
@@ -13,6 +13,16 @@ const MyWishlists = () => {
   const [loading, setLoading] = useState(true);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Define the preset category options - same as in Categories.js
+  const categoryOptions = [
+    { value: 'wedding', label: 'Wedding' },
+    { value: 'anniversary', label: 'Anniversary' },
+    { value: 'birthday', label: 'Birthday' },
+    { value: 'graduation', label: 'Graduation' },
+    { value: 'christmas', label: 'Christmas' },
+    { value: 'other', label: 'Other' }
+  ];
 
   useEffect(() => {
     // Set document title
@@ -51,6 +61,13 @@ const MyWishlists = () => {
       try {
         setCategoriesLoading(true);
         const data = await apiService.getCategories();
+        
+        // If there are no predefined categories in the database yet, 
+        // we should still show our predefined options in the dropdown
+        if (data.length === 0) {
+          console.log("No categories found in database, using predefined options");
+        }
+        
         setCategories(data);
         setCategoriesLoading(false);
       } catch (err) {
@@ -75,7 +92,7 @@ const MyWishlists = () => {
   // Filter wishlists by selected category
   const filteredWishlists = selectedCategory 
     ? wishlists.filter(wishlist => 
-        wishlist.category && wishlist.category.id === parseInt(selectedCategory)
+        wishlist.category && wishlist.category.name === selectedCategory
       )
     : wishlists;
 
@@ -214,7 +231,7 @@ const MyWishlists = () => {
               fontSize: "0.75rem",
               fontWeight: "500",
             }}>
-              {wishlist.category.name}
+              {categoryOptions.find(opt => opt.value === wishlist.category.name)?.label || wishlist.category.name}
             </span>
           )}
         </div>
@@ -382,7 +399,7 @@ const MyWishlists = () => {
         marginBottom: "1.5rem" 
       }}>
         {/* Category filter */}
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
           <div>
             <label 
               htmlFor="category-filter" 
@@ -412,36 +429,19 @@ const MyWishlists = () => {
                 backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                 backgroundRepeat: "no-repeat",
                 backgroundPosition: "right 0.5rem center",
-                backgroundSize: "1.25em 1.25em"
+                backgroundSize: "1.25em 1.25em",
+                boxShadow: "none",
+                outline: "none"
               }}
             >
               <option value="">All Categories</option>
-              {categories.map(category => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
+              {categoryOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </select>
           </div>
-          
-          <Link 
-            to="/categories" 
-            style={{ 
-              display: "flex",
-              alignItems: "center",
-              gap: "0.375rem",
-              color: "#4f46e5",
-              textDecoration: "none",
-              fontSize: "0.875rem",
-              fontWeight: "500"
-            }}
-          >
-            <svg style={{ width: "0.875rem", height: "0.875rem" }} fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-              <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-            </svg>
-            Manage Categories
-          </Link>
         </div>
         
         {/* Wishlist count */}

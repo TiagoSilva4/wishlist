@@ -40,6 +40,7 @@ class WishlistSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True
     )
+    category_name = serializers.CharField(write_only=True, required=False)
     items_count = serializers.SerializerMethodField()
     
     class Meta:
@@ -47,7 +48,7 @@ class WishlistSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'description', 'user', 'category', 'category_id',
             'created_at', 'updated_at', 'privacy', 'slug', 
-            'occasion_date', 'items_count'
+            'occasion_date', 'items_count', 'category_name'
         ]
         read_only_fields = ['id', 'user', 'created_at', 'updated_at', 'slug']
     
@@ -55,9 +56,26 @@ class WishlistSerializer(serializers.ModelSerializer):
         return obj.items.count()
     
     def create(self, validated_data):
+        # Handle category name if provided
+        category_name = validated_data.pop('category_name', None)
+        if category_name:
+            # Try to find or create the category by name
+            category, created = Category.objects.get_or_create(name=category_name)
+            validated_data['category'] = category
+        
         # Set the user to the current request user
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
+    
+    def update(self, instance, validated_data):
+        # Handle category name if provided
+        category_name = validated_data.pop('category_name', None)
+        if category_name:
+            # Try to find or create the category by name
+            category, created = Category.objects.get_or_create(name=category_name)
+            validated_data['category'] = category
+            
+        return super().update(instance, validated_data)
 
 class WishlistDetailSerializer(WishlistSerializer):
     """Detailed Wishlist serializer that includes items"""

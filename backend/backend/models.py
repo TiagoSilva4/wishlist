@@ -6,7 +6,16 @@ class Category(models.Model):
     """
     Category model to organize wishlists
     """
-    name = models.CharField(max_length=100)
+    CATEGORY_CHOICES = (
+        ('wedding', 'Wedding'),
+        ('anniversary', 'Anniversary'),
+        ('birthday', 'Birthday'),
+        ('graduation', 'Graduation'),
+        ('christmas', 'Christmas'),
+        ('other', 'Other'),
+    )
+    
+    name = models.CharField(max_length=100, choices=CATEGORY_CHOICES, default='other')
     description = models.TextField(blank=True)
     
     class Meta:

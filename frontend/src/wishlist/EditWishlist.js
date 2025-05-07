@@ -19,6 +19,16 @@ const EditWishlist = () => {
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Define the preset category options - same as in Categories.js
+  const categoryOptions = [
+    { value: 'wedding', label: 'Wedding' },
+    { value: 'anniversary', label: 'Anniversary' },
+    { value: 'birthday', label: 'Birthday' },
+    { value: 'graduation', label: 'Graduation' },
+    { value: 'christmas', label: 'Christmas' },
+    { value: 'other', label: 'Other' }
+  ];
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -72,6 +82,12 @@ const EditWishlist = () => {
       // Convert empty occasion_date to null
       if (submissionData.occasion_date === "") {
         submissionData.occasion_date = null;
+      }
+      
+      // Handle category directly by name
+      if (submissionData.category_id) {
+        submissionData.category_name = submissionData.category_id;
+        submissionData.category_id = null; // Clear the ID since we're using name
       }
       
       // Send data to API
@@ -159,7 +175,7 @@ const EditWishlist = () => {
         
         <div style={{ marginBottom: "1.5rem" }}>
           <label style={{ display: "block", fontWeight: "500", marginBottom: "0.5rem", color: "#4b5563" }}>
-            Category
+            Category <span style={{ color: "#64748b", fontWeight: "normal", fontSize: "0.875rem" }}>(Optional)</span>
           </label>
           <select
             name="category_id"
@@ -178,7 +194,8 @@ const EditWishlist = () => {
               backgroundRepeat: "no-repeat",
               backgroundSize: "1.25rem",
               transition: "all 0.2s",
-              outline: "none"
+              outline: "none",
+              color: "#1e293b"
             }}
             onFocus={(e) => {
               e.target.style.borderColor = "#a5b4fc";
@@ -189,9 +206,12 @@ const EditWishlist = () => {
               e.target.style.boxShadow = "none";
             }}
           >
-            <option value="">No Category</option>
-            {categories.map(category => (
-              <option key={category.id} value={category.id}>{category.name}</option>
+            <option value="">Select a category</option>
+            {/* Display the predefined categories */}
+            {categoryOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
             ))}
           </select>
           <p style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "0.5rem" }}>

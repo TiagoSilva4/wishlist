@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react'
 import FormErrors from '../components/FormErrors'
 import { login } from '../lib/allauth'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useConfig } from '../auth'
 
 export default function Login () {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [response, setResponse] = useState({ fetching: false, content: null })
+  const [nonExistentAccount, setNonExistentAccount] = useState(false)
   const config = useConfig()
+  const navigate = useNavigate()
 
   useEffect(() => {
     // Set document title
@@ -17,8 +19,24 @@ export default function Login () {
 
   function submit () {
     setResponse({ ...response, fetching: true })
+    setNonExistentAccount(false)
+    
     login({ email, password }).then((content) => {
       setResponse((r) => { return { ...r, content } })
+      
+      // Check for non-existent account error
+      if (content?.errors && content.errors.length > 0) {
+        const nonExistentError = content.errors.some(error => 
+          error.message.toLowerCase().includes("no account with this email") ||
+          error.message.toLowerCase().includes("user does not exist") ||
+          error.message.toLowerCase().includes("invalid credentials") ||
+          error.message.toLowerCase().includes("email and password") 
+        )
+        
+        if (nonExistentError) {
+          setNonExistentAccount(true)
+        }
+      }
     }).catch((e) => {
       console.error(e)
       window.alert(e)
@@ -51,8 +69,54 @@ export default function Login () {
         </p>
       </div>
 
-      {/* Form errors */}
-      {response.content?.errors && response.content.errors.length > 0 && (
+      {/* Non-existent account message */}
+      {nonExistentAccount && (
+        <div style={{ 
+          backgroundColor: "#eff6ff", // Blue background
+          border: "1px solid #dbeafe",
+          borderRadius: "0.75rem",
+          padding: "1.25rem",
+          color: "#1e40af",
+          marginBottom: "2rem"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <svg style={{ width: "1.5rem", height: "1.5rem", flexShrink: 0 }} fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+            <div>
+              <p style={{ fontWeight: "600", fontSize: "1rem" }}>Account Not Found</p>
+              <p style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}>
+                We couldn't find an account with this email address. Would you like to 
+                <Link to='/account/signup' style={{ 
+                  color: "#4f46e5", 
+                  fontWeight: "600", 
+                  marginLeft: "0.25rem",
+                  textDecoration: "none"
+                }}>create a new account</Link>?
+              </p>
+              <button 
+                onClick={() => navigate('/account/signup', { state: { email } })}
+                style={{
+                  marginTop: "0.75rem",
+                  backgroundColor: "#4f46e5",
+                  color: "white",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "0.375rem",
+                  border: "none",
+                  fontSize: "0.875rem",
+                  fontWeight: "600",
+                  cursor: "pointer"
+                }}
+              >
+                Sign Up Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Form errors - only show if not showing non-existent account message */}
+      {!nonExistentAccount && response.content?.errors && response.content.errors.length > 0 && (
         <div style={{ 
           backgroundColor: "#fef2f2",
           border: "1px solid #fee2e2",

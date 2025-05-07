@@ -4,11 +4,21 @@ import apiService from "../services/api";
 
 const Categories = () => {
   const [categories, setCategories] = useState([]);
-  const [newCategory, setNewCategory] = useState({ name: "", description: "" });
+  const [newCategory, setNewCategory] = useState({ name: "other", description: "" });
   const [editCategory, setEditCategory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
+  
+  // Define the preset category options
+  const categoryOptions = [
+    { value: 'wedding', label: 'Wedding' },
+    { value: 'anniversary', label: 'Anniversary' },
+    { value: 'birthday', label: 'Birthday' },
+    { value: 'graduation', label: 'Graduation' },
+    { value: 'christmas', label: 'Christmas' },
+    { value: 'other', label: 'Other' }
+  ];
 
   useEffect(() => {
     // Set document title
@@ -60,7 +70,7 @@ const Categories = () => {
       setError(null);
       const created = await apiService.createCategory(newCategory);
       setCategories([...categories, created]);
-      setNewCategory({ name: "", description: "" });
+      setNewCategory({ name: "other", description: "" });
       setLoading(false);
       setSuccessMessage("Category added successfully!");
       
@@ -267,14 +277,12 @@ const Categories = () => {
               color: "#1e293b",
               fontSize: "0.9375rem"
             }}>
-              Category Name <span style={{ color: "#e11d48" }}>*</span>
+              Category Type <span style={{ color: "#e11d48" }}>*</span>
             </label>
-            <input
-              type="text"
+            <select
               name="name"
               value={newCategory.name}
               onChange={handleNewCategoryChange}
-              placeholder="e.g. Birthday, Christmas, Electronics"
               style={{ 
                 width: "100%", 
                 padding: "0.75rem 1rem", 
@@ -282,7 +290,13 @@ const Categories = () => {
                 border: "1px solid #d1d5db",
                 fontSize: "0.9375rem",
                 transition: "all 0.2s",
-                outline: "none"
+                outline: "none",
+                backgroundColor: "white",
+                appearance: "none",
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 1rem center",
+                backgroundSize: "1.25rem"
               }}
               onFocus={(e) => {
                 e.target.style.borderColor = "#a5b4fc";
@@ -292,7 +306,13 @@ const Categories = () => {
                 e.target.style.borderColor = "#d1d5db";
                 e.target.style.boxShadow = "none";
               }}
-            />
+            >
+              {categoryOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
           
           <div style={{ marginBottom: "1.25rem" }}>
@@ -447,12 +467,10 @@ const Categories = () => {
                       flexDirection: "column", 
                       gap: "1rem"
                     }}>
-                      <input
-                        type="text"
+                      <select
                         name="name"
                         value={editCategory.name}
                         onChange={handleEditCategoryChange}
-                        placeholder="Category Name"
                         style={{ 
                           width: "100%", 
                           padding: "0.625rem 0.875rem", 
@@ -460,9 +478,20 @@ const Categories = () => {
                           border: "1px solid #d1d5db",
                           fontSize: "0.875rem",
                           backgroundColor: "white",
-                          outline: "none"
+                          outline: "none",
+                          appearance: "none",
+                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                          backgroundRepeat: "no-repeat",
+                          backgroundPosition: "right 0.75rem center",
+                          backgroundSize: "1rem"
                         }}
-                      />
+                      >
+                        {categoryOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
                       <textarea
                         name="description"
                         value={editCategory.description}
@@ -524,7 +553,7 @@ const Categories = () => {
                         color: "#1e293b", 
                         marginBottom: "0.5rem"
                       }}>
-                        {category.name}
+                        {categoryOptions.find(option => option.value === category.name)?.label || category.name}
                       </h3>
                       
                       {category.description && (
