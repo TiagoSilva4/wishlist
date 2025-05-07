@@ -3,21 +3,29 @@ import FormErrors from '../components/FormErrors'
 import { signUp } from '../lib/allauth'
 import { Link } from 'react-router-dom'
 import { useConfig } from '../auth'
-import ProviderList from '../socialaccount/ProviderList'
 
 export default function Signup () {
   const [email, setEmail] = useState('')
   const [password1, setPassword1] = useState('')
   const [password2, setPassword2] = useState('')
   const [password2Errors, setPassword2Errors] = useState([])
+  const [passwordsMatch, setPasswordsMatch] = useState(true)
   const [response, setResponse] = useState({ fetching: false, content: null })
   const config = useConfig()
-  const hasProviders = config.data.socialaccount?.providers?.length > 0
 
   useEffect(() => {
     // Set document title
     document.title = "Sign Up | WishList";
   }, []);
+  
+  // Check password match whenever either password field changes
+  useEffect(() => {
+    if (password1 && password2) {
+      setPasswordsMatch(password1 === password2)
+    } else {
+      setPasswordsMatch(true) // Don't show error when fields are empty
+    }
+  }, [password1, password2]);
 
   function submit () {
     if (password2 !== password1) {
@@ -256,7 +264,7 @@ export default function Signup () {
             <div style={{ position: "relative" }}>
               <input 
                 value={password2} 
-                onChange={(e) => setPassword2(e.target.value)} 
+                onChange={(e) => setPassword2(e.target.value)}
                 type='password' 
                 required 
                 placeholder="Confirm your password"
@@ -265,21 +273,21 @@ export default function Signup () {
                   padding: "0.75rem", 
                   paddingLeft: "2.5rem",
                   borderRadius: "0.375rem", 
-                  border: "1px solid #d1d5db",
+                  border: `1px solid ${!passwordsMatch && password2 ? "#f87171" : "#d1d5db"}`,
                   fontSize: "0.9375rem",
                   transition: "all 0.2s",
                   outline: "none"
                 }}
                 onFocus={(e) => {
-                  e.target.style.borderColor = "#a5b4fc";
-                  e.target.style.boxShadow = "0 0 0 3px rgba(165, 180, 252, 0.1)";
+                  e.target.style.borderColor = passwordsMatch ? "#a5b4fc" : "#f87171";
+                  e.target.style.boxShadow = `0 0 0 3px ${passwordsMatch ? "rgba(165, 180, 252, 0.1)" : "rgba(248, 113, 113, 0.1)"}`;
                 }}
                 onBlur={(e) => {
-                  e.target.style.borderColor = "#d1d5db";
+                  e.target.style.borderColor = !passwordsMatch && password2 ? "#f87171" : "#d1d5db";
                   e.target.style.boxShadow = "none";
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && email && password1 && password2) {
+                  if (e.key === 'Enter' && email && password1 && password2 && passwordsMatch) {
                     submit();
                   }
                 }}
@@ -299,7 +307,38 @@ export default function Signup () {
               >
                 <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
               </svg>
+              
+              {!passwordsMatch && password2 && (
+                <div style={{ 
+                  position: "absolute", 
+                  right: "0.75rem", 
+                  top: "50%", 
+                  transform: "translateY(-50%)",
+                  display: "flex",
+                  alignItems: "center", 
+                  color: "#ef4444" 
+                }}>
+                  <svg style={{ width: "1.25rem", height: "1.25rem" }} fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
             </div>
+            {!passwordsMatch && password2 && (
+              <div style={{ 
+                color: "#ef4444", 
+                fontSize: "0.875rem", 
+                marginTop: "0.5rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.375rem" 
+              }}>
+                <svg style={{ width: "0.875rem", height: "0.875rem", flexShrink: 0 }} fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                Passwords do not match
+              </div>
+            )}
             <FormErrors param='password2' errors={password2Errors} />
           </div>
           
@@ -310,7 +349,7 @@ export default function Signup () {
             marginBottom: "1.5rem" 
           }}>
             <button 
-              disabled={response.fetching || !email || !password1 || !password2 || password1 !== password2} 
+              disabled={response.fetching || !email || !password1 || !password2 || !passwordsMatch} 
               onClick={() => submit()}
               style={{ 
                 backgroundColor: "#4f46e5", 
@@ -321,8 +360,8 @@ export default function Signup () {
                 border: "none",
                 boxShadow: "0 2px 4px rgba(79, 70, 229, 0.15)",
                 fontSize: "0.9375rem",
-                cursor: (response.fetching || !email || !password1 || !password2 || password1 !== password2) ? "not-allowed" : "pointer",
-                opacity: (response.fetching || !email || !password1 || !password2 || password1 !== password2) ? 0.7 : 1,
+                cursor: (response.fetching || !email || !password1 || !password2 || !passwordsMatch) ? "not-allowed" : "pointer",
+                opacity: (response.fetching || !email || !password1 || !password2 || !passwordsMatch) ? 0.7 : 1,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -330,7 +369,7 @@ export default function Signup () {
                 transition: "all 0.2s ease"
               }}
               onMouseOver={(e) => {
-                if (!(response.fetching || !email || !password1 || !password2 || password1 !== password2)) {
+                if (!(response.fetching || !email || !password1 || !password2 || !passwordsMatch)) {
                   e.currentTarget.style.backgroundColor = "#4338ca";
                   e.currentTarget.style.transform = "translateY(-1px)";
                   e.currentTarget.style.boxShadow = "0 4px 6px rgba(79, 70, 229, 0.2)";
@@ -358,71 +397,9 @@ export default function Signup () {
                 </>
               )}
             </button>
-            
-            <Link 
-              to="/account/signup/passkey"
-              style={{ 
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "0.5rem",
-                textAlign: "center",
-                backgroundColor: "#f8fafc", 
-                color: "#1e293b", 
-                border: "1px solid #e2e8f0", 
-                padding: "0.75rem 1.5rem", 
-                borderRadius: "0.5rem",
-                fontWeight: "600",
-                textDecoration: "none",
-                transition: "all 0.2s ease"
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = "#f1f5f9";
-                e.currentTarget.style.transform = "translateY(-1px)";
-                e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.05)";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = "#f8fafc";
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <svg style={{ width: "1rem", height: "1rem" }} fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clipRule="evenodd" />
-              </svg>
-              Sign up using a passkey
-            </Link>
           </div>
         </div>
       </div>
-
-      {hasProviders && (
-        <div style={{ 
-          backgroundColor: "white", 
-          borderRadius: "0.75rem", 
-          overflow: "hidden",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.03)",
-          border: "1px solid #e5e7eb",
-          marginBottom: "2rem",
-          padding: "1.5rem" 
-        }}>
-          <h2 style={{ 
-            fontSize: "1.25rem", 
-            fontWeight: "700", 
-            color: "#1e293b", 
-            marginBottom: "1rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem"
-          }}>
-            <svg style={{ width: "1.25rem", height: "1.25rem", color: "#4f46e5" }} fill="currentColor" viewBox="0 0 20 20">
-              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-            </svg>
-            Or continue with
-          </h2>
-          <ProviderList callbackURL='/account/provider/callback' />
-        </div>
-      )}
 
       {/* Add this style for the spinner animation */}
       <style>{`

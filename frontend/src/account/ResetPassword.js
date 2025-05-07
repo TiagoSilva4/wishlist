@@ -13,12 +13,22 @@ function ResetPassword ({ resetKey, resetKeyResponse }) {
   const [password1, setPassword1] = useState('')
   const [password2, setPassword2] = useState('')
   const [password2Errors, setPassword2Errors] = useState([])
+  const [passwordsMatch, setPasswordsMatch] = useState(true)
   const [response, setResponse] = useState({ fetching: false, content: null })
 
   useEffect(() => {
     // Set document title
     document.title = "Set New Password | WishList";
   }, []);
+  
+  // Check password match whenever either password field changes
+  useEffect(() => {
+    if (password1 && password2) {
+      setPasswordsMatch(password1 === password2)
+    } else {
+      setPasswordsMatch(true) // Don't show error when fields are empty
+    }
+  }, [password1, password2]);
 
   function submit () {
     if (password2 !== password1) {
@@ -186,21 +196,21 @@ function ResetPassword ({ resetKey, resetKeyResponse }) {
                 padding: "0.75rem", 
                 paddingLeft: "2.5rem",
                 borderRadius: "0.375rem", 
-                border: "1px solid #d1d5db",
+                border: `1px solid ${!passwordsMatch && password2 ? "#f87171" : "#d1d5db"}`,
                 fontSize: "0.9375rem",
                 transition: "all 0.2s",
                 outline: "none"
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = "#a5b4fc";
-                e.target.style.boxShadow = "0 0 0 3px rgba(165, 180, 252, 0.1)";
+                e.target.style.borderColor = passwordsMatch ? "#a5b4fc" : "#f87171";
+                e.target.style.boxShadow = `0 0 0 3px ${passwordsMatch ? "rgba(165, 180, 252, 0.1)" : "rgba(248, 113, 113, 0.1)"}`;
               }}
               onBlur={(e) => {
-                e.target.style.borderColor = "#d1d5db";
+                e.target.style.borderColor = !passwordsMatch && password2 ? "#f87171" : "#d1d5db";
                 e.target.style.boxShadow = "none";
               }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && password1 && password2) {
+                if (e.key === 'Enter' && password1 && password2 && passwordsMatch) {
                   submit();
                 }
               }}
@@ -220,12 +230,43 @@ function ResetPassword ({ resetKey, resetKeyResponse }) {
             >
               <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
+            
+            {!passwordsMatch && password2 && (
+              <div style={{ 
+                position: "absolute", 
+                right: "0.75rem", 
+                top: "50%", 
+                transform: "translateY(-50%)",
+                display: "flex",
+                alignItems: "center", 
+                color: "#ef4444" 
+              }}>
+                <svg style={{ width: "1.25rem", height: "1.25rem" }} fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+            )}
           </div>
+          {!passwordsMatch && password2 && (
+            <div style={{ 
+              color: "#ef4444", 
+              fontSize: "0.875rem", 
+              marginTop: "0.5rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.375rem" 
+            }}>
+              <svg style={{ width: "0.875rem", height: "0.875rem", flexShrink: 0 }} fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              Passwords do not match
+            </div>
+          )}
           <FormErrors param='password2' errors={password2Errors} />
         </div>
 
         <button 
-          disabled={response.fetching || !password1 || !password2 || password1 !== password2} 
+          disabled={response.fetching || !password1 || !password2 || !passwordsMatch} 
           onClick={() => submit()}
           style={{ 
             backgroundColor: "#4f46e5", 
@@ -236,8 +277,8 @@ function ResetPassword ({ resetKey, resetKeyResponse }) {
             border: "none",
             boxShadow: "0 2px 4px rgba(79, 70, 229, 0.15)",
             fontSize: "0.9375rem",
-            cursor: (response.fetching || !password1 || !password2 || password1 !== password2) ? "not-allowed" : "pointer",
-            opacity: (response.fetching || !password1 || !password2 || password1 !== password2) ? 0.7 : 1,
+            cursor: (response.fetching || !password1 || !password2 || !passwordsMatch) ? "not-allowed" : "pointer",
+            opacity: (response.fetching || !password1 || !password2 || !passwordsMatch) ? 0.7 : 1,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -246,7 +287,7 @@ function ResetPassword ({ resetKey, resetKeyResponse }) {
             width: "100%"
           }}
           onMouseOver={(e) => {
-            if (!(response.fetching || !password1 || !password2 || password1 !== password2)) {
+            if (!(response.fetching || !password1 || !password2 || !passwordsMatch)) {
               e.currentTarget.style.backgroundColor = "#4338ca";
               e.currentTarget.style.transform = "translateY(-1px)";
               e.currentTarget.style.boxShadow = "0 4px 6px rgba(79, 70, 229, 0.2)";
@@ -277,7 +318,7 @@ function ResetPassword ({ resetKey, resetKeyResponse }) {
       </div>
     )
   }
-
+  
   return (
     <main className="fade-in" style={{ 
       maxWidth: "800px",
@@ -295,10 +336,10 @@ function ResetPassword ({ resetKey, resetKeyResponse }) {
           color: "#1e293b",
           marginBottom: "1rem",
         }}>
-          <span style={{ fontWeight: "800", color: "#1e293b" }}>Create New</span> <span style={{ fontWeight: "800", color: "#4f46e5" }}>Password</span>
+          <span style={{ fontWeight: "800", color: "#1e293b" }}>Reset</span> <span style={{ fontWeight: "800", color: "#4f46e5" }}>Password</span>
         </h1>
         <p style={{ color: "#64748b", fontSize: "1.125rem" }}>
-          Set a new password for your WishList account
+          Create a new secure password for your account
         </p>
       </div>
 
@@ -320,20 +361,18 @@ function ResetPassword ({ resetKey, resetKeyResponse }) {
             gap: "0.5rem"
           }}>
             <svg style={{ width: "1.25rem", height: "1.25rem", color: "#4f46e5" }} fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd" />
+              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
             </svg>
-            Set a Secure Password
+            Choose New Password
           </h2>
           <p style={{ color: "#64748b", fontSize: "0.875rem" }}>
-            Remember your password? <Link to='/account/login' style={{ color: "#4f46e5", textDecoration: "none", fontWeight: "600" }}>
-              Back to login
-            </Link>
+            Create a secure password that you don't use on other websites
           </p>
         </div>
         
         {body}
       </div>
-
+      
       {/* Add this style for the spinner animation */}
       <style>{`
         @keyframes spin {
@@ -357,9 +396,8 @@ export function ResetPasswordByLink () {
 }
 
 export function ResetPasswordByCode () {
-  const { state } = useLocation()
-  if (!state || !state.resetKey || !state.resetKeyResponse) {
-    return <Navigate to='/account/password/reset' />
-  }
-  return <ResetPassword resetKey={state.resetKey} resetKeyResponse={state.resetKeyResponse} />
+  const location = useLocation()
+  const { resetKey, resetKeyResponse } = location.state || {}
+  if (!resetKey) return <Navigate to='/account/password/reset' />
+  return <ResetPassword resetKey={resetKey} resetKeyResponse={resetKeyResponse} />
 }

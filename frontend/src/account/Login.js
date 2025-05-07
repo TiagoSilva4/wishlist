@@ -3,15 +3,12 @@ import FormErrors from '../components/FormErrors'
 import { login } from '../lib/allauth'
 import { Link } from 'react-router-dom'
 import { useConfig } from '../auth'
-import ProviderList from '../socialaccount/ProviderList'
-import WebAuthnLoginButton from '../mfa/WebAuthnLoginButton'
 
 export default function Login () {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [response, setResponse] = useState({ fetching: false, content: null })
   const config = useConfig()
-  const hasProviders = config.data.socialaccount?.providers?.length > 0
 
   useEffect(() => {
     // Set document title
@@ -327,76 +324,9 @@ export default function Login () {
                 Send me a sign-in code
               </Link>
             )}
-            
-            <WebAuthnLoginButton style={{ 
-              textAlign: "center",
-              backgroundColor: "#f8fafc", 
-              color: "#1e293b", 
-              border: "1px solid #e2e8f0", 
-              padding: "0.75rem 1.5rem", 
-              borderRadius: "0.5rem",
-              fontWeight: "600",
-              fontSize: "0.9375rem",
-              textDecoration: "none",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.5rem",
-              transition: "all 0.2s ease"
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = "#f1f5f9";
-              e.currentTarget.style.transform = "translateY(-1px)";
-              e.currentTarget.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.05)";
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = "#f8fafc";
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "none";
-            }}
-            >
-              <svg style={{ width: "1rem", height: "1rem" }} fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clip-rule="evenodd" />
-              </svg>
-              Sign in with a passkey
-            </WebAuthnLoginButton>
           </div>
         </div>
       </div>
-      
-      {/* Social Providers */}
-      {hasProviders && (
-        <div style={{
-          backgroundColor: "white", 
-          borderRadius: "0.75rem", 
-          overflow: "hidden",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.03)",
-          border: "1px solid #e5e7eb",
-          marginBottom: "2rem"
-        }}>
-          <div style={{ padding: "1.5rem", borderBottom: "1px solid #e5e7eb" }}>
-            <h2 style={{ 
-              fontSize: "1.25rem", 
-              fontWeight: "700", 
-              color: "#1e293b", 
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem"
-            }}>
-              <svg style={{ width: "1.25rem", height: "1.25rem", color: "#4f46e5" }} fill="currentColor" viewBox="0 0 20 20">
-                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-              </svg>
-              Connect with a Third-Party
-            </h2>
-            <p style={{ color: "#64748b", fontSize: "0.875rem" }}>
-              Use one of your existing accounts to sign in quickly
-            </p>
-          </div>
-          <div style={{ padding: "1.5rem" }}>
-            <ProviderList callbackURL='/account/provider/callback' />
-          </div>
-        </div>
-      )}
       
       {/* Add this style for the spinner animation */}
       <style>{`
