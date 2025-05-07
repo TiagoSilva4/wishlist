@@ -1,0 +1,75 @@
+version: "3"
+services:
+  frontend:
+    container_name: frontend
+    build:
+      context: ./frontend/
+      dockerfile: Dockerfile
+    volumes:
+      - ./frontend/src:/code/src/
+      - ./frontend/public:/code/public/
+    environment:
+      - WDS_SOCKET_PORT=443
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`wish-list.social`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.ws.rule=Host(`wish-list.social`) && PathPrefix(`/ws`)"
+      - "traefik.http.routers.ws.entrypoints=websecure"
+      - "traefik.http.routers.ws.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend.loadbalancer.sticky=true"
+  
+  backend:
+    container_name: backend
+    build:
+      context: ./backend/
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend/backend:/code/backend/
+      - ../../allauth:/code/allauth
+    environment:
+      - DEBUG=True  # Enable Django debug for more information
+      - MAILGUN_API_KEY=${MAILGUN_API_KEY}
+      - MAILGUN_DOMAIN=mg.wish-list.social
+      - MAILGUN_SMTP_USERNAME=postmaster@mg.wish-list.social
+      - MAILGUN_SMTP_PASSWORD=${MAILGUN_SMTP_PASSWORD}
+      - TEST_EMAIL=tiagos3373@gmail.com
+    ports:
+      - 8000:8000
+    labels:
+      - "traefik.enable=true"
+      # Specific route for allauth
+      - "traefik.http.routers.allauth.rule=Host(`wish-list.social`) && PathPrefix(`/_allauth`)"
+      - "traefik.http.routers.allauth.entrypoints=websecure"
+      - "traefik.http.routers.allauth.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.allauth.priority=200"
+      # Original routes
+      - "traefik.http.routers.backend.rule=Host(`wish-list.social`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
+  
+  proxy:
+    image: traefik:v3.0
+    container_name: proxy
+    ports:
+      - 80:80
+      - 443:443
+      - 10000:10000
+    volumes:
+      - ./traefik.toml:/etc/traefik/traefik.toml
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./letsencrypt:/letsencrypt
+      - /etc/letsencrypt/live/wish-list.social/fullchain.pem:/etc/certs/fullchain.pem
+      - /etc/letsencrypt/live/wish-list.social/privkey.pem:/etc/certs/privkey.pem
+  
+  # Add a direct nginx proxy for testing
+  debug-proxy:
+    image: nginx:alpine
+    container_name: debug-proxy
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "9000:80"
+    depends_on:
+      - backend

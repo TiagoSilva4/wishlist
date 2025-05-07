@@ -1,0 +1,117 @@
+[log]
+level = "DEBUG"
+
+[api]
+dashboard = true
+
+[accessLog]
+
+[providers]
+providersThrottleDuration = 10
+
+[providers.file]
+filename = "traefik.toml"
+directory = "/etc/traefik/"
+watch = true
+
+[entryPoints]
+  [entryPoints.web]
+    address = ":80"
+    [entryPoints.web.http.redirections.entryPoint]
+      to = "websecure"
+      scheme = "https"
+  
+  [entryPoints.websecure]
+    address = ":443"
+    [entryPoints.websecure.http.tls]
+      
+  # Keep your existing entry point for internal routing
+  [entryPoints.http]
+    address = ":10000"
+
+# Static configuration for SSL certificates
+[[tls.certificates]]
+  certFile = "/etc/certs/fullchain.pem"
+  keyFile = "/etc/certs/privkey.pem"
+
+[http.routers]
+  [http.routers.django]
+    service = "django"
+    rule = "PathPrefix(`/accounts`) || PathPrefix(`/_allauth`) || PathPrefix(`/ninja`) || PathPrefix(`/drf`) || PathPrefix(`/api`)"
+    entryPoints = ["http"]
+
+  [http.routers.react]
+    service = "react"
+    rule = "PathPrefix(`/`)"
+    entryPoints = ["http"]
+    
+  [http.routers.django-secure]
+    service = "django"
+    rule = "PathPrefix(`/accounts`) || PathPrefix(`/_allauth`) || PathPrefix(`/ninja`) || PathPrefix(`/drf`) || PathPrefix(`/api`)"
+    entryPoints = ["websecure"]
+    [http.routers.django-secure.tls]
+  
+  [http.routers.react-secure]
+    service = "react"
+    rule = "PathPrefix(`/`)"
+    entryPoints = ["websecure"]
+    [http.routers.react-secure.tls]
+    
+  # Add WebSocket support for React development server
+  [http.routers.websocket]
+    service = "react"
+    rule = "PathPrefix(`/ws`)"
+    entryPoints = ["websecure"]
+    [http.routers.websocket.tls]
+
+  [http.routers.websocket-secure]
+    service = "frontend"
+    rule = "Host(`wish-list.social`) && PathPrefix(`/ws`)"
+    entryPoints = ["websecure"]
+    [http.routers.websocket-secure.tls]
+
+  [http.routers.ws]
+    service = "frontend"
+    middlewares = ["ws-middleware"]
+    rule = "Host(`wish-list.social`) && PathPrefix(`/ws`)"
+    entryPoints = ["websecure"]
+    [http.routers.ws.tls]
+
+  [http.routers.allauth]
+    rule = "Host(`wish-list.social`) && PathPrefix(`/_allauth`)"
+    service = "backend"
+    entryPoints = ["websecure"]
+    middlewares = ["strip-allauth-prefix"]
+    priority = 200
+    [http.routers.allauth.tls]
+
+[http.services]
+  [http.services.react.loadBalancer]
+    [[http.services.react.loadBalancer.servers]]
+      url = "http://frontend:3000"
+    # Enable WebSockets for the React service
+    [http.services.react.loadBalancer.responseForwarding]
+      flushInterval = "100ms"
+  
+  [http.services.django.loadBalancer]
+    [[http.services.django.loadBalancer.servers]]
+      url = "http://backend:8000"
+      
+# Add middleware configuration for WebSockets
+[http.middlewares]
+  [http.middlewares.websocket.headers]
+    [http.middlewares.websocket.headers.customResponseHeaders]
+      Connection = "Upgrade"
+
+  [http.middlewares.ws-middleware.headers]
+    [http.middlewares.ws-middleware.headers.customRequestHeaders]
+      X-Forwarded-Proto = "https"
+
+  [http.middlewares.strip-allauth-prefix.stripPrefix]
+    prefixes = ["/_allauth"]
+
+[http.services.frontend.loadBalancer]
+  [[http.services.frontend.loadBalancer.servers]]
+    url = "http://frontend:3000"
+  [http.services.frontend.loadBalancer.responseForwarding]
+    flushInterval = "1ms"
